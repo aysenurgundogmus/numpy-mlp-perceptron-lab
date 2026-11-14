@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YSA Eğitim ve Morfolojik Analiz Laboratuvarı</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        canvas.pixelated {
+            image-rendering: pixelated;
+        }
+    </style>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen py-8 px-4">
+    <div class="max-w-6xl mx-auto space-y-8">
+        
+        <!-- Üst Başlık -->
+        <header class="border-b border-slate-800 pb-5 flex items-center justify-between">
+            <div>
+                <h1 class="text-3xl font-bold tracking-tight text-white">Yapay Sinir Ağı Laboratuvarı</h1>
+                <p class="text-slate-400 text-sm mt-1">Eğitim, Karar Sınırları ve Piksel Deformasyon Analizi</p>
+            </div>
+            <span id="badge" class="px-3 py-1 text-xs font-semibold rounded-full bg-slate-800 text-slate-300">Hazır</span>
+        </header>
+
+        <!-- ÜST PANEL: EĞİTİM & METRİKLER -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            
+            <!-- Sol: Eğitim Ayarları -->
+            <div class="bg-slate-800/60 p-6 rounded-2xl border border-slate-700 space-y-5">
+                <h2 class="text-base font-semibold text-white flex items-center gap-2">
+                    <span class="w-2 h-2 rounded-full bg-blue-500"></span> Mod 1: Model Eğitimi
+                </h2>
+
+                <div>
+                    <label class="block text-xs font-medium text-slate-400 mb-2">CSV Veri Seti</label>
+                    <input type="file" id="file" accept=".csv" class="block w-full text-xs text-slate-300 file:mr-3 file:py-2 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-blue-600 file:text-white hover:file:bg-blue-500 cursor-pointer bg-slate-900/50 rounded-lg border border-slate-700">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-medium text-slate-400 mb-1">Model Türü</label>
+                    <select id="model" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500">
+                        <option value="mlp">Çok Katmanlı Algılayıcı (MLP - ReLU/Softmax)</option>
+                        <option value="perceptron">Perceptron (Softmax)</option>
+                    </select>
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-medium text-slate-400 mb-1">Öğrenme Oranı (lr)</label>
+                        <input type="number" id="lr" value="0.1" step="0.01" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-slate-400 mb-1">Devir (Epoch)</label>
+                        <input type="number" id="epoch" value="20" min="1" max="100" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500">
+                    </div>
+                </div>
+
+                <button id="trainBtn" onclick="train()" class="w-full py-3 bg-blue-600 hover:bg-blue-500 text-white font-medium rounded-xl transition duration-200 shadow-lg shadow-blue-600/30">
+                    Eğitimi Başlat
+                </button>
+                <p id="status" class="text-xs text-center text-slate-400 min-h-[1rem]"></p>
+            </div>
+
+            <!-- Sağ: Eğitim Grafiği & Metrikler -->
+            <div class="lg:col-span-2 space-y-4">
+                <div class="grid grid-cols-3 gap-3">
+                    <div class="bg-slate-800/40 border border-slate-800 p-3 rounded-xl">
+                        <span class="text-xs text-slate-500">Örnek Sayısı</span>
+                        <p id="metricSamples" class="text-lg font-bold text-slate-200">-</p>
+                    </div>
+                    <div class="bg-slate-800/40 border border-slate-800 p-3 rounded-xl">
+                        <span class="text-xs text-slate-500">Son Doğruluk (Acc)</span>
+                        <p id="metricAcc" class="text-lg font-bold text-emerald-400">-%</p>
+                    </div>
+                    <div class="bg-slate-800/40 border border-slate-800 p-3 rounded-xl">
+                        <span class="text-xs text-slate-500">Son Kayıp (Loss)</span>
+                        <p id="metricLoss" class="text-lg font-bold text-amber-400">-</p>
+                    </div>
+                </div>
+
+                <div class="bg-slate-800/60 p-4 rounded-2xl border border-slate-700">
+                    <div class="relative h-56">
+                        <canvas id="trainingChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- ALT PANEL: PİKSEL DEFORMASYON & CANLI OLASILIK ANALİZİ -->
+        <div class="bg-slate-800/60 p-6 rounded-2xl border border-slate-700 space-y-6">
+            <div class="flex flex-wrap items-center justify-between border-b border-slate-700/60 pb-3 gap-3">
+                <div>
+                    <h2 class="text-base font-semibold text-white flex items-center gap-2">
+                        <span class="w-2 h-2 rounded-full bg-emerald-500"></span> Mod 2: Canlı Piksel Deformasyon & Olasılık Analizörü
+                    </h2>
+                    <p class="text-xs text-slate-400 mt-0.5">Rakam şablonu yükleyin, pikselleri silerek/ekleyerek modelin karar dağılımını canlı izleyin.</p>
+                </div>
+                
+                <div class="flex items-center gap-2">
+                    <select id="digitSelector" class="bg-slate-900 border border-slate-700 text-xs text-white rounded-lg px-2.5 py-1.5 focus:outline-none focus:border-indigo-500">
+                        <option value="0">Rakam: 0</option>
+                        <option value="1">Rakam: 1</option>
+                        <option value="2">Rakam: 2</option>
+                        <option value="3">Rakam: 3</option>
+                        <option value="4">Rakam: 4</option>
+                        <option value="5">Rakam: 5</option>
+                        <option value="6">Rakam: 6</option>
+                        <option value="7">Rakam: 7</option>
+                        <option value="8" selected>Rakam: 8</option>
+                        <option value="9">Rakam: 9</option>
+                    </select>
+
+                    <button onclick="loadSelectedDigit()" class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-xs font-medium rounded-lg text-white transition shadow-sm">
+                        Şablonu Yükle
+                    </button>
+                    
+                    <button onclick="clearCanvas()" class="px-3 py-1.5 bg-slate-700 hover:bg-slate-600 text-xs font-medium rounded-lg text-slate-300 transition">
+                        Temizle
+                    </button>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-12 gap-8 items-center">
+                
+                <!-- Tuval -->
+                <div class="md:col-span-4 flex flex-col items-center space-y-4">
+                    <div class="p-2 bg-slate-950 rounded-xl border-2 border-slate-700 shadow-inner">
+                        <canvas id="digitCanvas" width="28" height="28" class="pixelated cursor-crosshair rounded" style="width: 224px; height: 224px;"></canvas>
+                    </div>
+
+                    <div class="flex items-center gap-4 bg-slate-900 px-4 py-2 rounded-xl border border-slate-700">
+                        <label class="inline-flex items-center text-xs font-medium text-slate-300 cursor-pointer">
+                            <input type="radio" name="drawMode" value="draw" checked onchange="setMode('draw')" class="mr-1.5 text-blue-600 focus:ring-0"> Kalem (Piksel Ekle)
+                        </label>
+                        <label class="inline-flex items-center text-xs font-medium text-slate-300 cursor-pointer">
+                            <input type="radio" name="drawMode" value="erase" onchange="setMode('erase')" class="mr-1.5 text-red-500 focus:ring-0"> Silgi (Deforme Et)
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Olasılık Çubukları -->
+                <div class="md:col-span-8 space-y-3">
+                    <div class="flex items-center justify-between text-xs font-semibold text-slate-400 px-1">
+                        <span>Sınıf (Rakam)</span>
+                        <span>Model Tahmini: <strong id="predictedDigit" class="text-lg text-emerald-400 ml-1">-</strong></span>
+                    </div>
+
+                    <div id="probBarsContainer" class="space-y-1.5"></div>
+                </div>
+
+            </div>
+        </div>
+
+    </div>
+
+    <script src="/static/script.js"></script>
+</body>
+</html>
